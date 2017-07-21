@@ -139,7 +139,7 @@ class Player(object):
 		make sure to call this before created a SharedAI object so that the new AIs are used for the non-base player
 		"""
 		self.AI.dice_ai = load_model(self.name + '_dice_ai.h5')
-		self.AI.reroll_ai = load_model(self.name + '_steal_ai.h5')
+		self.AI.reroll_ai = load_model(self.name + '_reroll_ai.h5')
 		self.AI.steal_ai = load_model(self.name + '_steal_ai.h5')
 		self.AI.swap_ai = load_model(self.name + '_swap_ai.h5')
 		self.AI.buy_ai = load_model(self.name + '_buy_ai.h5')

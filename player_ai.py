@@ -258,11 +258,11 @@ class PlayerAI(object):
 
 	def generic_ai(self, additional_inputs):
 		ai = Sequential()
-		ai.add(Dense(512, input_shape = (self.input_dim + additional_inputs,) ) )
-		ai.add(Dropout(0.2))
-		ai.add(Activation('relu'))
-		ai.add(Dense(256))
+		ai.add(Dense(256, input_shape = (self.input_dim + additional_inputs,) ) )
 		ai.add(Dropout(0.1))
+		ai.add(Activation('relu'))
+		ai.add(Dense(128))
+		ai.add(Dropout(0.05))
 		ai.add(Activation('relu'))
 		ai.add(Dense(64))
 		#ai.add(Dropout(0.05))

@@ -39,8 +39,14 @@ def main(*args, **kwargs):
 		print 'cycle #%d had mean turns of %.01f, sd: %.03f' % (k, np.mean(current_cycle), np.std(current_cycle))
 		print 'flushed history'
 	means = [float(sum(x))/500 for x in total_turns]
-	for i in range(25):
-		print 'cycle #%d mean: %.01f, sd:%.03f' % (i, means[i], np.std(total_turns[i]))
+	with open('machikoro.log','a') as f:
+		f.write(name + '\n+++')
+		f.write(str(players[0].AI.dice_ai.summary()))
+		f.write('+++')
+		for i in range(25):
+			print 'cycle #%d mean: %.01f, sd:%.03f' % (i, means[i], np.std(total_turns[i]))
+			f.write('cycle #%d mean: %.01f, sd:%.03f\n' % (i, means[i], np.std(total_turns[i])) )
+		f.write('---\n')
 	print 'done!'
 
 if __name__=='__main__':
