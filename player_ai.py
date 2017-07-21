@@ -84,7 +84,7 @@ class PlayerAI(object):
 			player = self.player
 		if len(player.dice_history) <> 0:
 			dice_x = np.asarray(player.dice_history)[:,0,:] 
-			print dice_x.shape
+			#print dice_x.shape
 			dice_y = keras.utils.to_categorical(player.dice_history_win, 2)
 			self.dice_ai.fit(dice_x, dice_y, epochs = 10, batch_size = 100, verbose=0)
 
@@ -265,7 +265,7 @@ class PlayerAI(object):
 		ai.add(Dropout(0.1))
 		ai.add(Activation('relu'))
 		ai.add(Dense(64))
-		ai.add(Dropout(0.05))
+		#ai.add(Dropout(0.05))
 		ai.add(Activation('relu'))
 		ai.add(Dense(2))
 		ai.add(Activation('softmax'))

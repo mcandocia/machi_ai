@@ -6,10 +6,15 @@ from game import Game
 from player import Player
 from player_ai import SharedAI
 
+import argparse
+
+import numpy as np 
 
 
-def main(load):
-	game = Game(0)
+
+def main(*args, **kwargs):
+	load, name, verbose = kwargs['load'], kwargs['name'], kwargs['verbose']
+	game = Game(0, name=name)
 	players = game.players
 	if load:
 		players[0].load_ai()
@@ -20,26 +25,33 @@ def main(load):
 		current_cycle = []
 		print '---k=%d---' % k
 		for j in range(10):
-			print 'in training round j=%d' % j
+			sys.stdout.write('in training round j=%d' % j)
+			sys.stdout.flush()
 			for i in range(50):
 				new_game = Game(i, players)
-				new_game.run()
+				new_game.run(silent=(not verbose))
 				current_cycle.append(new_game.turn)
-			print 'training models'
+			sys.stdout.write(' '*30 + '\r')
 			new_game.train_players()
 		new_game.flush_player_history()
 		players[0].save_ai()
 		total_turns.append(current_cycle)
-		print 'cycle #%d had mean turns of %.01f' % (k, float(sum(current_cycle))/500.)
+		print 'cycle #%d had mean turns of %.01f, sd: %.03f' % (k, np.mean(current_cycle), np.std(current_cycle))
 		print 'flushed history'
 	means = [float(sum(x))/500 for x in total_turns]
 	for i in range(25):
-		print 'cycle #%d mean: %.01f' % (i, means[i])
+		print 'cycle #%d mean: %.01f, sd:%.03f' % (i, means[i], np.std(total_turns[i]))
 	print 'done!'
 
 if __name__=='__main__':
-	if len(sys.argv) > 1:
-		load = sys.argv[1] == 'load'
-	else:
-		load = False
-	main(load)
+	parser = argparse.ArgumentParser(description = 'teach a computer to play Machi Koro')
+	parser.add_argument('--load', dest='load',action='store_true')
+	parser.add_argument('--name', dest='name', default='',help="prefix to add to loaded/saved models")
+	parser.add_argument('-v','--verbose',dest='verbose',action='store_true')
+	args = parser.parse_args()
+
+	kwargs = {'load':getattr(args, 'load'),
+	'name':getattr(args, 'name'),
+	'verbose':getattr(args,'verbose')}
+	print kwargs
+	main(**kwargs)

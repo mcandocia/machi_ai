@@ -20,12 +20,14 @@ def choose_from_probs(probs, constraint_mask = None):
 	return choice[0]
 
 class Player(object):
-	def __init__(self, game, order):
+	def __init__(self, game, order, name=''):
 		self.game = game 
 		self.buildings = deepcopy(starting_buildings)
 		self.coins = 3
 		self.order = order
 		self.shared_ai = False
+		#name refers to model name
+		self.name=name
 		#this will not change between games
 		self.id = order 
 		self.win = 0
@@ -136,20 +138,21 @@ class Player(object):
 		"""
 		make sure to call this before created a SharedAI object so that the new AIs are used for the non-base player
 		"""
-		self.AI.dice_ai = load_model('dice_ai.h5')
-		self.AI.reroll_ai = load_model('steal_ai.h5')
-		self.AI.steal_ai = load_model('steal_ai.h5')
-		self.AI.swap_ai = load_model('swap_ai.h5')
-		self.AI.buy_ai = load_model('buy_ai.h5')
+		self.AI.dice_ai = load_model(self.name + '_dice_ai.h5')
+		self.AI.reroll_ai = load_model(self.name + '_steal_ai.h5')
+		self.AI.steal_ai = load_model(self.name + '_steal_ai.h5')
+		self.AI.swap_ai = load_model(self.name + '_swap_ai.h5')
+		self.AI.buy_ai = load_model(self.name + '_buy_ai.h5')
+		print 'loaded ai'
 
 	def save_ai(self):
 		#dice
 		ai = self.AI 
-		ai.dice_ai.save('dice_ai.h5')
-		ai.reroll_ai.save('reroll_ai.h5')
-		ai.steal_ai.save('steal_ai.h5')
-		ai.swap_ai.save('swap_ai.h5')
-		ai.buy_ai.save('buy_ai.h5')
+		ai.dice_ai.save(self.name + '_dice_ai.h5')
+		ai.reroll_ai.save(self.name + '_reroll_ai.h5')
+		ai.steal_ai.save(self.name + '_steal_ai.h5')
+		ai.swap_ai.save(self.name + '_swap_ai.h5')
+		ai.buy_ai.save(self.name + '_buy_ai.h5')
 		print 'saved AI'
 
 

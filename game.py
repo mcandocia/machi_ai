@@ -9,9 +9,9 @@ from random import shuffle
 from numpy.random import choice
 
 class Game(object):
-	def __init__(self, id, pre_existing_players = None):
+	def __init__(self, id, pre_existing_players = None, name=''):
 		if not pre_existing_players:
-			self.players = [Player(self, i) for i in range(4)]
+			self.players = [Player(self, i, name) for i in range(4)]
 			self.initialize_player_ai()
 		else:
 			shuffle(pre_existing_players)
@@ -19,12 +19,13 @@ class Game(object):
 
 		self.building_supply = deepcopy(supply_buildings)
 		self.id = id 
-		
+		self.name = name 
 		#may be used for weighting
 		self.turn = 0
 
-	def run(self):
-		print 'Beginning game #%s' % self.id 
+	def run(self, silent=False):
+		if not silent:
+			print 'Beginning game #%s' % self.id 
 		current_player = self.players[0]
 		while True:
 			self.turn += 1
@@ -35,12 +36,12 @@ class Game(object):
 				current_player.extra_turn = False 
 			else:
 				current_player = self.get_next_player(current_player)
-			if self.turn % 200 == 0:
+			if self.turn % 200 == 0 and not silent:
 				print 'turn %s' % self.turn
 				for player in self.players:
 					print player.coins
-
-		print 'Player %d, order %d won in %d turns' % (current_player.id, current_player.order, self.turn) 
+		if not silent:
+			print 'Player %d, order %d won in %d turns' % (current_player.id, current_player.order, self.turn) 
 		for player in self.players:
 			player.update_win_history()
 		if player.shared_ai:
