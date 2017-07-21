@@ -23,6 +23,7 @@ class Player(object):
 		self.buildings = deepcopy(starting_buildings)
 		self.coins = 3
 		self.order = order
+                self.shared_ai = False
 		#this will not change between games
 		self.id = order 
 		self.win = 0
@@ -74,7 +75,9 @@ class Player(object):
 
 	def train_ai(self, reset=False):
 		"""trains own 4 AI, and then resets history if desired"""
-		self.AI.train()
+                if not self.shared_ai:
+		        self.AI.train()
+                elif self.id == 
 		if reset:
 			self.dice_history = []
 			self.dice_history_turn = []
@@ -109,6 +112,23 @@ class Player(object):
 		self.steal_history_win = []
 		self.swap_history_win = []
 		self.reroll_history_win = []
+                if self.shared_ai:
+                        self.AI.shared.dice_history = []
+                        self.AI.shared.dice_history_turn = []
+                        self.AI.shared.buy_history = []
+                        self.AI.shared.buy_history_turn = []
+                        self.AI.shared.steal_history = []
+                        self.AI.shared.steal_history_turn = []
+                        self.AI.shared.swap_history = []
+                        self.AI.shared.swap_history_turn = []
+                        self.AI.shared.reroll_history = []
+                        self.AI.shared.reroll_history_turn = []
+                        self.AI.shared.dice_history_win = []
+                        self.AI.shared.buy_history_win = []
+                        self.AI.shared.steal_history_win = []
+                        self.AI.shared.swap_history_win = []
+                        self.AI.shared.reroll_history_win = []
+                        
 
 	def load_ai(self):
 		pass

@@ -15,6 +15,47 @@ from numpy.random import choice as rchoice
 
 from constants import * 
 
+class SharedAI(object):
+        """
+        this class has attributes similar to the player class in regards to history recording;
+        all of the history is handled in the respective record_xxx() calls in the PlayerAI class
+        """
+        def __init__(self, player_list):
+                """
+                the first player keeps their keras models, which are then referenced by
+                each other player in evaluation;
+                when adding training data, each player adds their history to the
+                shared attributes found in this class object rather than their own, 
+                and those attributes are used during training
+                """
+                for player in player_list:
+                        player.shared_ai = True
+                base_player = player_list[0]
+                self.ai = ai = base_player.AI
+                self.player_id = base_player.id
+                for player in player_list:
+                        player.AI.dice_ai = ai.dice_ai
+                        player.AI.swap_ai = ai.swap_ai
+                        player.AI.steal_ai = ai.steal_ai
+                        player.AI.buy_ai = ai.buy_ai
+                        player.AI.reroll_ai = ai.reroll_ai
+                        player.AI.shared = self
+                self.dice_history = []
+                self.dice_history_win = []
+                self.dice_history_turn = []
+                self.reroll_history = []
+                self.reroll_history_win = []
+                self.reroll_history_turn = []
+                self.steal_history = []
+                self.steal_history_win = []
+                self.steal_history_turn = []
+                self.swap_history = []
+                self.swap_history_win = []
+                self.swap_history_turn = []
+                self.buy_history = []
+                self.buy_history_win = []
+                self.buy_history_turn = []
+
 
 class PlayerAI(object):
 	def __init__(self, player):
@@ -37,7 +78,10 @@ class PlayerAI(object):
 		any network without training data will be skipped
 		dice | reroll | buy | swap | steal
 		"""
-		player = self.player 
+                if self.player.shared_ai:
+                        player = self.shared
+                else:
+		        player = self.player
 		if len(player.dice_history) <> 0:
 			dice_x = np.asarray(player.dice_history)[:,0,:] 
 			print dice_x.shape
@@ -77,40 +121,60 @@ class PlayerAI(object):
 	def record_dice(self):
 		extra_input = np.identity(1) * (self.player.roll==2)
 		input = self.merge_input(extra_input)
-		self.player.dice_history.append(input)
-		self.player.dice_history_turn.append(self.player.game.turn)
-
+                if not self.player.shared_ai:
+		        self.player.dice_history.append(input)
+		        self.player.dice_history_turn.append(self.player.game.turn)
+                else:
+                        self.shared.dice_history.append(input)
+		        self.shared.dice_history_turn.append(self.player.game.turn)
+                        
 	def record_reroll(self):
 		extra_input = np.identity(1) * self.player.reroll
 		#this considers the value of the dice roll and the number of dice rolled
 		right_input = [1*(self.player.roll==2)] + [0] * 12
 		right_input[self.player.prev_roll_value] = 1
 		input = self.merge_right(self.merge_input(extra_input), right_input)
-		self.player.reroll_history.append(input)
-		self.player.reroll_history_turn.append(self.player.game.turn)
-
+                if not self.player.shared_ai:
+		        self.player.reroll_history.append(input)
+		        self.player.reroll_history_turn.append(self.player.game.turn)
+                else:
+                        self.shared.reroll_history.append(input)
+                        self.shared.reroll_history_turn.append(self.player.game.turn)
+                        
 	def record_buy(self):
 		extra_input = np.zeros( (1,19) )
 		if self.player.buy_choice <> 19:
 			extra_input[0,self.player.buy_choice] = 1
 		input = self.merge_input(extra_input)
-		self.player.buy_history.append(input)
-		self.player.buy_history_turn.append(self.player.game.turn)
+                if not self.player.shared_ai:
+		        self.player.buy_history.append(input)
+		        self.player.buy_history_turn.append(self.player.game.turn)
+                else:
+                        self.shared.buy_history.append(input)
+		        self.shared.buy_history_turn.append(self.player.game.turn)
 
 	def record_swap(self):
 		extra_input = np.zeros((1,12*36))
 		extra_input[0,self.player.swap_choice] = 1
 		input = self.merge_input(extra_input)
-		self.player.swap_history.append(input)
-		self.player.swap_history_turn.append(self.player.game.turn)
+                if not self.player.shared_ai:
+		        self.player.swap_history.append(input)
+		        self.player.swap_history_turn.append(self.player.game.turn)
+                else:
+                        self.shared.swap_history.append(input)
+		        self.shared.swap_history_turn.append(self.player.game.turn)
 		
 
 	def record_steal(self):
 		extra_input =np.zeros((1,3))
 		extra_input[0, self.player.victim_index - 1] = 1
 		input = self.merge_input(extra_input)
-		self.player.steal_history.append(input)
-		self.player.steal_history_turn.append(self.player.game.turn)
+                if not self.player.shared_ai:
+		        self.player.steal_history.append(input)
+		        self.player.steal_history_turn.append(self.player.game.turn)
+                else:
+                        self.shared.steal_history.append(input)
+		        self.shared.steal_history_turn.append(self.player.game.turn)
 
 	
 

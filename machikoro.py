@@ -1,12 +1,14 @@
 import gpu_rec
 
 from game import Game 
-from player import Player 
+from player import Player
+from player_ai import SharedAI
 
 def main():
 	game = Game(0)
-	game.run() 
-	players = game.players 
+	players = game.players
+        shared_ai = SharedAI(players)
+        game.run() 
 	for k in range(25):
 		print '---k=%d---' % k
 		for j in range(10):
