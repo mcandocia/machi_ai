@@ -2,6 +2,8 @@ from player_ai import PlayerAI
 from constants import * 
 import numpy as np 
 
+from keras.models import load_model 
+
 from copy import deepcopy
 from random import randint
 from random import random
@@ -23,7 +25,7 @@ class Player(object):
 		self.buildings = deepcopy(starting_buildings)
 		self.coins = 3
 		self.order = order
-                self.shared_ai = False
+		self.shared_ai = False
 		#this will not change between games
 		self.id = order 
 		self.win = 0
@@ -75,9 +77,10 @@ class Player(object):
 
 	def train_ai(self, reset=False):
 		"""trains own 4 AI, and then resets history if desired"""
-                if not self.shared_ai:
-		        self.AI.train()
-                elif self.id == 
+		if not self.shared_ai:
+			self.AI.train()
+		elif self.id == self.AI.shared.player_id:
+			self.AI.train()
 		if reset:
 			self.dice_history = []
 			self.dice_history_turn = []
@@ -95,7 +98,7 @@ class Player(object):
 			self.swap_history_win = []
 			self.reroll_history_win = []
 
-	def flush_history(self):
+	def flush_history(self, flush_shared=True):
 		"""use for memory purposes and when some data might be irrelevant"""
 		self.dice_history = []
 		self.dice_history_turn = []
@@ -112,29 +115,43 @@ class Player(object):
 		self.steal_history_win = []
 		self.swap_history_win = []
 		self.reroll_history_win = []
-                if self.shared_ai:
-                        self.AI.shared.dice_history = []
-                        self.AI.shared.dice_history_turn = []
-                        self.AI.shared.buy_history = []
-                        self.AI.shared.buy_history_turn = []
-                        self.AI.shared.steal_history = []
-                        self.AI.shared.steal_history_turn = []
-                        self.AI.shared.swap_history = []
-                        self.AI.shared.swap_history_turn = []
-                        self.AI.shared.reroll_history = []
-                        self.AI.shared.reroll_history_turn = []
-                        self.AI.shared.dice_history_win = []
-                        self.AI.shared.buy_history_win = []
-                        self.AI.shared.steal_history_win = []
-                        self.AI.shared.swap_history_win = []
-                        self.AI.shared.reroll_history_win = []
-                        
-
+		if self.shared_ai and flush_shared:
+			self.AI.shared.dice_history = []
+			self.AI.shared.dice_history_turn = []
+			self.AI.shared.buy_history = []
+			self.AI.shared.buy_history_turn = []
+			self.AI.shared.steal_history = []
+			self.AI.shared.steal_history_turn = []
+			self.AI.shared.swap_history = []
+			self.AI.shared.swap_history_turn = []
+			self.AI.shared.reroll_history = []
+			self.AI.shared.reroll_history_turn = []
+			self.AI.shared.dice_history_win = []
+			self.AI.shared.buy_history_win = []
+			self.AI.shared.steal_history_win = []
+			self.AI.shared.swap_history_win = []
+			self.AI.shared.reroll_history_win = []
+				 
 	def load_ai(self):
-		pass
+		"""
+		make sure to call this before created a SharedAI object so that the new AIs are used for the non-base player
+		"""
+		self.AI.dice_ai = load_model('dice_ai.h5')
+		self.AI.reroll_ai = load_model('steal_ai.h5')
+		self.AI.steal_ai = load_model('steal_ai.h5')
+		self.AI.swap_ai = load_model('swap_ai.h5')
+		self.AI.buy_ai = load_model('buy_ai.h5')
 
 	def save_ai(self):
-		pass
+		#dice
+		ai = self.AI 
+		ai.dice_ai.save('dice_ai.h5')
+		ai.reroll_ai.save('reroll_ai.h5')
+		ai.steal_ai.save('steal_ai.h5')
+		ai.swap_ai.save('swap_ai.h5')
+		ai.buy_ai.save('buy_ai.h5')
+		print 'saved AI'
+
 
 	def get_next_player(self, offset=1):
 		return self.game.get_next_player(self, offset)

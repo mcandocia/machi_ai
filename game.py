@@ -43,6 +43,26 @@ class Game(object):
 		print 'Player %d, order %d won in %d turns' % (current_player.id, current_player.order, self.turn) 
 		for player in self.players:
 			player.update_win_history()
+		if player.shared_ai:
+			shared = player.AI.shared 
+			for player in self.players:
+				shared.dice_history += player.dice_history
+				shared.dice_history_win += player.dice_history_win
+				shared.dice_history_turn += player.dice_history_turn
+				shared.reroll_history += player.reroll_history
+				shared.reroll_history_win += player.reroll_history_win
+				shared.reroll_history_turn += player.reroll_history_turn
+				shared.steal_history += player.steal_history
+				shared.steal_history_win += player.steal_history_win
+				shared.steal_history_turn += player.steal_history_turn
+				shared.swap_history += player.swap_history
+				shared.swap_history_win += player.swap_history_win
+				shared.swap_history_turn += player.swap_history_turn
+				shared.buy_history += player.buy_history
+				shared.buy_history_win += player.buy_history_win
+				shared.buy_history_turn += player.buy_history_turn
+				player.flush_history(flush_shared=False)
+
 		return self.players 
 
 	def flush_player_history(self):
