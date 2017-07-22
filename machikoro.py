@@ -40,7 +40,7 @@ def main(*args, **kwargs):
 				new_game.run(silent=(not verbose))
 				current_cycle.append(new_game.turn)
 			sys.stdout.write(' '*30 + '\r')
-			#new_game.train_players()
+			new_game.train_players()
 		new_game.flush_player_history()
 		if USE_SHARED:
 			players[0].save_ai()
