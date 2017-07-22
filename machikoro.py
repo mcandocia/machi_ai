@@ -14,11 +14,19 @@ import numpy as np
 
 def main(*args, **kwargs):
 	load, name, verbose = kwargs['load'], kwargs['name'], kwargs['verbose']
-	game = Game(0, name=name)
+	use_max_probability = kwargs['use_max_probability']
+	USE_SHARED = kwargs['shared_ai']
+
+	game = Game(0, name=name, options=kwargs)
 	players = game.players
 	if load:
 		players[0].load_ai()
-	shared_ai = SharedAI(players)
+	if USE_SHARED:
+		shared_ai = SharedAI(players)
+	elif load:
+		players[1].load_ai()
+		players[2].load_ai()
+		players[3].load_ai()
 	game.run() 
 	total_turns = []
 	for k in range(25):
@@ -28,13 +36,17 @@ def main(*args, **kwargs):
 			sys.stdout.write('in training round j=%d' % j)
 			sys.stdout.flush()
 			for i in range(50):
-				new_game = Game(i, players)
+				new_game = Game(i, players, options=kwargs)
 				new_game.run(silent=(not verbose))
 				current_cycle.append(new_game.turn)
 			sys.stdout.write(' '*30 + '\r')
 			new_game.train_players()
 		new_game.flush_player_history()
-		players[0].save_ai()
+		if USE_SHARED:
+			players[0].save_ai()
+		else:
+			for player in players:
+				player.save_ai()
 		total_turns.append(current_cycle)
 		print 'cycle #%d had mean turns of %.01f, sd: %.03f' % (k, np.mean(current_cycle), np.std(current_cycle))
 		print 'flushed history'
@@ -54,10 +66,14 @@ if __name__=='__main__':
 	parser.add_argument('--load', dest='load',action='store_true')
 	parser.add_argument('--name', dest='name', default='',help="prefix to add to loaded/saved models")
 	parser.add_argument('-v','--verbose',dest='verbose',action='store_true')
+	parser.add_argument('--use-max-probability',dest='use_max_probability',action = 'store_true')
+	parser.add_argument('--unshared-ai',dest='shared_ai',action = 'store_false')
 	args = parser.parse_args()
 
 	kwargs = {'load':getattr(args, 'load'),
 	'name':getattr(args, 'name'),
-	'verbose':getattr(args,'verbose')}
+	'verbose':getattr(args,'verbose'),
+	'use_max_probability':getattr(args, 'use_max_probability'),
+	'shared_ai':getattr(args, 'shared_ai')}
 	print kwargs
 	main(**kwargs)

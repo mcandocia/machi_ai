@@ -11,16 +11,32 @@ from random import shuffle
 
 from numpy.random import choice as rchoice
 
+use_max_probability = True
+
 def choose_from_probs(probs, constraint_mask = None):
-	probs = probs**2 + 0.05/len(probs)
-	if constraint_mask:
-		probs = probs * constraint_mask
+	#will almost always make optimal decision; 
+	if use_max_probability:
+		if constraint_mask:
+			probs = probs * constraint_mask
+		probs = probs * (probs==np.max(probs)) + (probs**2 * 0.01 + 0.001)/len(probs)
+		if constraint_mask:
+			probs = probs * constraint_mask
+
+	else:
+		probs = probs**2 + 0.05/len(probs)#will select best option most likely, but can choose other ones with decent probability
+		if constraint_mask:
+			probs = probs * constraint_mask
 	probs = probs/np.sum(probs)
 	choice = rchoice(range(len(probs)), size=1, p=probs)
 	return choice[0]
 
 class Player(object):
 	def __init__(self, game, order, name=''):
+		#don't do this in production code
+		#changes the probability behavior of the choose_from_probs() function
+		global use_max_probability
+		use_max_probability = game.use_max_probability
+
 		self.game = game 
 		self.buildings = deepcopy(starting_buildings)
 		self.coins = 3
@@ -148,11 +164,18 @@ class Player(object):
 	def save_ai(self):
 		#dice
 		ai = self.AI 
-		ai.dice_ai.save(self.name + '_dice_ai.h5')
-		ai.reroll_ai.save(self.name + '_reroll_ai.h5')
-		ai.steal_ai.save(self.name + '_steal_ai.h5')
-		ai.swap_ai.save(self.name + '_swap_ai.h5')
-		ai.buy_ai.save(self.name + '_buy_ai.h5')
+		if self.shared_ai:
+			ai.dice_ai.save(self.name + '_dice_ai.h5')
+			ai.reroll_ai.save(self.name + '_reroll_ai.h5')
+			ai.steal_ai.save(self.name + '_steal_ai.h5')
+			ai.swap_ai.save(self.name + '_swap_ai.h5')
+			ai.buy_ai.save(self.name + '_buy_ai.h5')
+		else:
+			ai.dice_ai.save(self.name + '_dice_ai_%d.h5' % self.id)
+			ai.reroll_ai.save(self.name + '_reroll_ai_%d.h5' % self.id)
+			ai.steal_ai.save(self.name + '_steal_ai_%d.h5' % self.id)
+			ai.swap_ai.save(self.name + '_swap_ai_%d.h5' % self.id)
+			ai.buy_ai.save(self.name + '_buy_ai_%d.h5' % self.id)
 		print 'saved AI'
 
 

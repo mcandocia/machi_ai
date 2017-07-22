@@ -9,7 +9,8 @@ from random import shuffle
 from numpy.random import choice
 
 class Game(object):
-	def __init__(self, id, pre_existing_players = None, name=''):
+	def __init__(self, id, pre_existing_players = None, name='', options=None):
+		self.use_max_probability = options['use_max_probability']
 		if not pre_existing_players:
 			self.players = [Player(self, i, name) for i in range(4)]
 			self.initialize_player_ai()
@@ -22,6 +23,7 @@ class Game(object):
 		self.name = name 
 		#may be used for weighting
 		self.turn = 0
+
 
 	def run(self, silent=False):
 		if not silent:
