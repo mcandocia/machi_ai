@@ -75,7 +75,13 @@ class Player(object):
 		dice = [randint(1,6) for _ in range(self.roll)]
 		if self.roll==2 and dice[0]==dice[1]:
 			self.double=True
+		else:
+			#for rerolls
+			self.double=False
 		self.roll_value = sum(dice)
+		if self.game.record_game:
+			self.game.game_record_file.write('ROLL: player %d rolls a %d %s with %d dice\n' % (self.order, self.roll_value, str(dice), self.roll))
+
 
 	def update_win_history(self):
 		self.dice_history_win += [self.win] * (len(self.dice_history) - len(self.dice_history_win))
@@ -150,15 +156,22 @@ class Player(object):
 			self.AI.shared.swap_history_win = []
 			self.AI.shared.reroll_history_win = []
 				 
-	def load_ai(self):
+	def load_ai(self, use_shared=False):
 		"""
 		make sure to call this before created a SharedAI object so that the new AIs are used for the non-base player
 		"""
-		self.AI.dice_ai = load_model(self.name + '_dice_ai.h5')
-		self.AI.reroll_ai = load_model(self.name + '_reroll_ai.h5')
-		self.AI.steal_ai = load_model(self.name + '_steal_ai.h5')
-		self.AI.swap_ai = load_model(self.name + '_swap_ai.h5')
-		self.AI.buy_ai = load_model(self.name + '_buy_ai.h5')
+		if use_shared or self.shared_ai:
+			self.AI.dice_ai = load_model(self.name + '_dice_ai.h5')
+			self.AI.reroll_ai = load_model(self.name + '_reroll_ai.h5')
+			self.AI.steal_ai = load_model(self.name + '_steal_ai.h5')
+			self.AI.swap_ai = load_model(self.name + '_swap_ai.h5')
+			self.AI.buy_ai = load_model(self.name + '_buy_ai.h5')
+		else:
+			self.AI.dice_ai = load_model(self.name + '_dice_ai_%d.h5' % self.id)
+			self.AI.reroll_ai = load_model(self.name + '_reroll_ai_%d.h5' % self.id)
+			self.AI.steal_ai = load_model(self.name + '_steal_ai_%d.h5' % self.id)
+			self.AI.swap_ai = load_model(self.name + '_swap_ai_%d.h5' % self.id)
+			self.AI.buy_ai = load_model(self.name + '_buy_ai_%d.h5' % self.id)
 		print 'loaded ai'
 
 	def save_ai(self):
@@ -220,16 +233,30 @@ class Player(object):
 		#purple
 		self.calculate_purple()
 
+		#coin status update if game is recorded
+		if self.game.record_game:
+			self.game.game_record_file.write('COINS: player %d has %d coins\n' % (self.order, self.coins))
+
 		#buy
 		self.decide_buy()
 		if self.buy_choice <> 19:
 			self.buildings[BUILDING_ORDER[self.buy_choice]] += 1
 			self.game.building_supply[BUILDING_ORDER[self.buy_choice]] -= 1
 			self.coins -= building_cost[BUILDING_ORDER[self.buy_choice]]
+			if self.game.record_game:
+				self.game.game_record_file.write('BUY: player %d bought a(n) %s (now has %d of them)\n' % 
+					(self.order, 
+					BUILDING_ORDER[self.buy_choice],
+					self.buildings[BUILDING_ORDER[self.buy_choice]]))
+
+		elif self.game.record_game:
+			self.game.game_record_file.write('BUY: player %d chooses not to buy anything\n' % self.order )
 
 		#end
 		if self.double and self.buildings.amusement_park == 1:
 			self.extra_turn = True 
+			if self.game.record_game:
+				self.game.game_record_file.write('EXTRA TURN: player %d gets an extra turn!\n' % self.order)
 
 		self.check_if_win()
 
@@ -260,6 +287,8 @@ class Player(object):
 			self.reroll = 1
 		else:
 			self.reroll = 0
+		if self.reroll==1:
+			self.game.game_record_file.write("REROLL: player %d is rerolling!\n" % self.order)
 		self.AI.record_reroll()
 		return 0
 
@@ -294,6 +323,8 @@ class Player(object):
 			val = self.buildings.bakery
 			if self.buildings.shopping_mall==1:
 				val = 2 * val 
+			if self.game.record_game and val > 0:
+				self.game.game_record_file.write('BAKERY: player %d receives %d coins (now has %d)\n' % (self.order, val, self.coins + val))
 			return val 
 		if self.roll_value == 4:
 			val = self.buildings.convenience_store 
@@ -301,15 +332,23 @@ class Player(object):
 				val = 4 * val 
 			else:
 				val = 3 * val 
+			if self.game.record_game and val > 0:
+				self.game.game_record_file.write('CONVENIENCE STORE: player %d receives %d coins (now has %d)\n' % (self.order, val, self.coins + val))
 			return val 
 		if self.roll_value == 7:
 			val = 3 * self.buildings.cheese_factory * self.buildings.ranch 
+			if self.game.record_game and val > 0:
+				self.game.game_record_file.write('RANCH: player %d receives %d coins (now has %d)\n' % (self.order, val, self.coins + val ))
 			return val 
 		if self.roll_value == 8:
 			val = 3 * self.buildings.furniture_factory * (self.buildings.mine + self.buildings.forest)
+			if self.game.record_game and val > 0:
+				self.game.game_record_file.write('FURNITURE FACTORY: player %d receives %d coins (now has %d)\n' % (self.order, val, self.coins + val ))
 			return val 
 		if self.roll_value in [11, 12]:
 			val = 2 * self.buildings['fruit&veg_market'] * (self.buildings.wheat_field + self.buildings.apple_orchard)
+			if self.game.record_game and val > 0:
+				self.game.game_record_file.write('FRUIT&VEG MARKET: player %d receives %d coins (now has %d)\n' % (self.order, val, self.coins + val ))
 			return val 
 		return 0
 
@@ -323,6 +362,9 @@ class Player(object):
 				coins_to_steal = min(target_player.coins, 2)
 				target_player.coins -= coins_to_steal 
 				self.coins += coins_to_steal 
+				if self.game.record_game and coins_to_steal > 0:
+					self.game.game_record_file.write('STADIUM: player %d (now has %d) receives %d coins from player %d (now has %d)\n' % 
+						(self.order, self.coins, coins_to_steal, target_player.order, target_player.coins))
 
 		#decide from whombst to steal
 		if self.buildings.tv_station:
@@ -331,6 +373,9 @@ class Player(object):
 			theft_value = min(5, self.victim.coins)
 			self.victim.coins -= theft_value 
 			self.coins += theft_value 
+			if self.game.record_game and theft_value > 0:
+				self.game.game_record_file.write('TV STATION: player %d (now has %d) steals %d coins from player %d (now has %d)\n' % 
+					(self.order, self.coins, theft_value, self.victim.order, self.victim.coins))
 
 		#decide what buildings to jack 
 		if self.buildings.business_center:
@@ -349,6 +394,8 @@ class Player(object):
 			target_player.buildings[self_building] += 1
 			self.buildings[opponent_building] += 1
 			target_player.buildings[opponent_building] -= 1
+			if self.game.record_game:
+				self.game.game_record_file.write('BUSINESS CENTER: player %d swapped a(n) %s for player %d''s %s!\n' % (self.order, self_building, target_player.order, opponent_building))
 
 		return 0 
 

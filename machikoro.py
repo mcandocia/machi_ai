@@ -20,7 +20,7 @@ def main(*args, **kwargs):
 	game = Game(0, name=name, options=kwargs)
 	players = game.players
 	if load:
-		players[0].load_ai()
+		players[0].load_ai(USE_SHARED)
 	if USE_SHARED:
 		shared_ai = SharedAI(players)
 	elif load:
@@ -36,11 +36,11 @@ def main(*args, **kwargs):
 			sys.stdout.write('in training round j=%d' % j)
 			sys.stdout.flush()
 			for i in range(50):
-				new_game = Game(i, players, options=kwargs)
+				new_game = Game(1 + i + 50*j + 10*50*k, players, options=kwargs)
 				new_game.run(silent=(not verbose))
 				current_cycle.append(new_game.turn)
 			sys.stdout.write(' '*30 + '\r')
-			new_game.train_players()
+			#new_game.train_players()
 		new_game.flush_player_history()
 		if USE_SHARED:
 			players[0].save_ai()
@@ -68,12 +68,14 @@ if __name__=='__main__':
 	parser.add_argument('-v','--verbose',dest='verbose',action='store_true')
 	parser.add_argument('--use-max-probability',dest='use_max_probability',action = 'store_true')
 	parser.add_argument('--unshared-ai',dest='shared_ai',action = 'store_false')
+	parser.add_argument('--record-game', dest='game_record_filename', help='filename to store a verbal recollection of the game in', type=str, default='')
 	args = parser.parse_args()
 
 	kwargs = {'load':getattr(args, 'load'),
 	'name':getattr(args, 'name'),
 	'verbose':getattr(args,'verbose'),
 	'use_max_probability':getattr(args, 'use_max_probability'),
-	'shared_ai':getattr(args, 'shared_ai')}
+	'shared_ai':getattr(args, 'shared_ai'),
+	'game_record_filename':getattr(args,'game_record_filename')}
 	print kwargs
 	main(**kwargs)

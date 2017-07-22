@@ -23,14 +23,23 @@ class Game(object):
 		self.name = name 
 		#may be used for weighting
 		self.turn = 0
+		if options['game_record_filename'] <> '':
+			self.record_game = True
+			self.game_record_file = open(options['game_record_filename'], 'a')
+		else:
+			self.record_game = False 
 
 
 	def run(self, silent=False):
 		if not silent:
 			print 'Beginning game #%s' % self.id 
+		if self.record_game:
+			self.game_record_file.write('---BEGIN GAME %s---\n' % self.id)
 		current_player = self.players[0]
 		while True:
 			self.turn += 1
+			if self.record_game:
+				self.game_record_file.write("BEGIN TURN %d\n" % self.turn)
 			current_player.take_turn()
 			if current_player.win:
 				break 
@@ -44,6 +53,17 @@ class Game(object):
 					print player.coins
 		if not silent:
 			print 'Player %d, order %d won in %d turns' % (current_player.id, current_player.order, self.turn) 
+		if self.record_game:
+			self.game_record_file.write('Player %d, order %d won in %d turns\n' % (current_player.id, current_player.order, self.turn) )
+			self.game_record_file.write('FINAL STANDINGS:\n')
+			for player in self.players:
+				self.game_record_file.write('+++++++++++++++++++++')
+				self.game_record_file.write("PLAYER %d\n" % player.order)
+				self.game_record_file.write("TOTAL COINS: %d\n" % player.coins)
+				for building in BUILDING_ORDER:
+					self.game_record_file.write("%s COUNT: %d\n" % (building.upper(), player.buildings[building]))
+			self.game_record_file.write('--------------------------------\n')
+			self.game_record_file.close()
 		for player in self.players:
 			player.update_win_history()
 		if player.shared_ai:
@@ -95,9 +115,14 @@ class Game(object):
 				if target_player.buildings.shopping_mall:
 					biz_cost = biz_cost * 2
 				final_cost = min(biz_cost, max_amount)
+				
 				max_amount -= final_cost
 				player.coins = max_amount
 				target_player.coins += final_cost
+				if self.record_game and final_cost > 0:
+					self.game_record_file.write('CAFE: transferring %d coins from player %d (now has %d) to player %d (now has %d)\n' % 
+						(final_cost, player.order, player.coins, target_player.order, target_player.coins))
+
 		else:
 			for i in range(1,4):
 				target_player = self.get_next_player(player,i)
@@ -110,6 +135,9 @@ class Game(object):
 				max_amount -= final_cost
 				player.coins = max_amount
 				target_player.coins += final_cost
+				if self.record_game and final_cost > 0:
+					self.game_record_file.write('FAMILY RESTAURANT: transferring %d coins from player %d (now has %d) to player %d (now has %d)\n' % 
+						(final_cost, player.order, player.coins, target_player.order, target_player.coins))
 		return 0
 
 	def activate_blue(self, player):
@@ -122,14 +150,24 @@ class Game(object):
 		for target_player in self.players:
 			if roll_value==1:
 				target_player.coins += target_player.buildings.wheat_field 
+				if self.record_game and target_player.buildings.wheat_field > 0:
+					self.game_record_file.write("WHEAT FIELD: player %d gets %d coins (now has %d)\n" % (target_player.order, target_player.buildings.wheat_field, target_player.coins))
 			elif roll_value==2:
 				target_player.coins += target_player.buildings.ranch
+				if self.record_game and target_player.buildings.ranch > 0:
+					self.game_record_file.write("RANCH: player %d gets %d coins (now has %d)\n" % (target_player.order, target_player.buildings.ranch, target_player.coins))
 			elif roll_value==5:
 				target_player.coins += target_player.buildings.forest
+				if self.record_game and target_player.buildings.forest> 0:
+					self.game_record_file.write("FOREST: player %d gets %d coins (now has %d)\n" % (target_player.order, target_player.buildings.forest, target_player.coins))
 			elif roll_value==9:
 				target_player.coins += target_player.buildings.mine * 5
+				if self.record_game and target_player.buildings.mine > 0:
+					self.game_record_file.write("MINE: player %d gets %d coins (now has %d)\n" % (target_player.order, target_player.buildings.mine*5, target_player.coins))
 			else:#10
 				target_player.coins += target_player.buildings.apple_orchard * 3
+				if self.record_game and target_player.buildings.apple_orchard > 0:
+					self.game_record_file.write("APPLE ORCHARD: player %d gets %d coins (now has %d)\n" % (target_player.order, target_player.buildings.mine*3, target_player.coins))
 
 		return 0 
 
