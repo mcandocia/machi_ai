@@ -10,7 +10,14 @@ from numpy.random import choice
 
 class Game(object):
 	def __init__(self, id, pre_existing_players = None, name='', options=None):
-		self.use_max_probability = options['use_max_probability']
+		if 'use_max_probability' not in options:
+			self.use_max_probability = False 
+		else:
+			self.use_max_probability = options['use_max_probability']
+		if 'prob_mod' not in options:
+			self.prob_mod=0.
+		else:
+			self.prob_mod = options['prob_mod']
 		if not pre_existing_players:
 			self.players = [Player(self, i, name) for i in range(4)]
 			self.initialize_player_ai()
@@ -23,7 +30,9 @@ class Game(object):
 		self.name = name 
 		#may be used for weighting
 		self.turn = 0
-		if options['game_record_filename'] <> '':
+		if 'game_record_filename' not in options:
+			self.record_game=False
+		elif options['game_record_filename'] <> '':
 			self.record_game = True
 			self.game_record_file = open(options['game_record_filename'], 'a')
 		else:

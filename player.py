@@ -14,13 +14,17 @@ from numpy.random import choice as rchoice
 use_max_probability = True
 
 #this makes the probabilities slightly less deterministic
-modulate_prob = True
+#modulate_prob = True
+prob_mod = 0.
 
 def choose_from_probs(probs, constraint_mask = None):
 	#will almost always make optimal decision; 
 	if use_max_probability:
 		if constraint_mask:
 			probs = probs * constraint_mask
+		if prob_mod:
+			#np.maximum just in case modulation value is changed or some weird act of rngsus
+			probs = probs * np.maximum(0, np.random.normal(1, prob_mod, len(probs)))
 		probs = probs * (probs==np.max(probs)) + (probs**2 * 0.01 + 0.001)/len(probs)
 		if constraint_mask:
 			probs = probs * constraint_mask
@@ -29,9 +33,7 @@ def choose_from_probs(probs, constraint_mask = None):
 		probs = probs**2 + 0.05/len(probs)#will select best option most likely, but can choose other ones with decent probability
 		if constraint_mask:
 			probs = probs * constraint_mask
-	if modulate_prob:
-		#np.maximum just in case modulation value is changed or some weird act of rngsus
-		probs = probs * np.maximum(0, np.random.normal(1, 0.006, len(probs)))
+	
 	probs = probs/np.sum(probs)
 	choice = rchoice(range(len(probs)), size=1, p=probs)
 	return choice[0]
@@ -41,8 +43,9 @@ class Player(object):
 		#don't do this in production code
 		#changes the probability behavior of the choose_from_probs() function
 		global use_max_probability
+		global prob_mod
 		use_max_probability = game.use_max_probability
-
+		prob_mod = game.prob_mod 
 		self.game = game 
 		self.buildings = deepcopy(starting_buildings)
 		self.coins = 3
@@ -219,8 +222,7 @@ class Player(object):
 		self.double=False
 		#decide whether to roll 1 or 2 dice, if possible
 		self.decide_dice()
-		if self.roll==1:
-			self.roll_dice()
+		self.roll_dice()
 		#decide if you want to reroll, if possible
 		self.decide_reroll()
 		if self.reroll:

@@ -69,6 +69,8 @@ if __name__=='__main__':
 	parser.add_argument('--use-max-probability',dest='use_max_probability',action = 'store_true')
 	parser.add_argument('--unshared-ai',dest='shared_ai',action = 'store_false')
 	parser.add_argument('--record-game', dest='game_record_filename', help='filename to store a verbal recollection of the game in', type=str, default='')
+	parser.add_argument('--probability-mod','--prob-mod', dest='prob_mod', type=float,default=0., 
+		help="""standard deviation of factor (mean=1) to multiply probabilities by for randomized decisionmaking; value < 0.01 recommended""")
 	args = parser.parse_args()
 
 	kwargs = {'load':getattr(args, 'load'),
@@ -76,6 +78,7 @@ if __name__=='__main__':
 	'verbose':getattr(args,'verbose'),
 	'use_max_probability':getattr(args, 'use_max_probability'),
 	'shared_ai':getattr(args, 'shared_ai'),
-	'game_record_filename':getattr(args,'game_record_filename')}
+	'game_record_filename':getattr(args,'game_record_filename'),
+	'prob_mod':getattr(args,'prob_mod')}
 	print kwargs
 	main(**kwargs)
