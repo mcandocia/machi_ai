@@ -13,6 +13,9 @@ from numpy.random import choice as rchoice
 
 use_max_probability = True
 
+#this makes the probabilities slightly less deterministic
+modulate_prob = True
+
 def choose_from_probs(probs, constraint_mask = None):
 	#will almost always make optimal decision; 
 	if use_max_probability:
@@ -26,6 +29,9 @@ def choose_from_probs(probs, constraint_mask = None):
 		probs = probs**2 + 0.05/len(probs)#will select best option most likely, but can choose other ones with decent probability
 		if constraint_mask:
 			probs = probs * constraint_mask
+	if modulate_prob:
+		#np.maximum just in case modulation value is changed or some weird act of rngsus
+		probs = probs * np.maximum(0, np.random.normal(1, 0.006, len(probs)))
 	probs = probs/np.sum(probs)
 	choice = rchoice(range(len(probs)), size=1, p=probs)
 	return choice[0]
@@ -287,7 +293,7 @@ class Player(object):
 			self.reroll = 1
 		else:
 			self.reroll = 0
-		if self.reroll==1:
+		if self.reroll==1 and self.game.record_game:
 			self.game.game_record_file.write("REROLL: player %d is rerolling!\n" % self.order)
 		self.AI.record_reroll()
 		return 0
