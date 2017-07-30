@@ -8,8 +8,21 @@ from random import shuffle
 
 from numpy.random import choice
 
+import csv
+import os
+
 class Game(object):
 	def __init__(self, id, pre_existing_players = None, name='', options=None):
+		if 'full_record' in options and options['full_record'] <> '':
+			self.full_record = True 
+			if not os.path.exists(options['full_record']):
+				with open(options['full_record'],'w') as f:
+					writer = csv.writer(f)
+					writer.writerow(self.get_full_record_headers())
+			self.full_record_file = open(options['full_record'],'a')
+			self.full_record_writer = csv.writer(self.full_record_file)
+		else:
+			self.full_record = False 
 		if 'use_max_probability' not in options:
 			self.use_max_probability = False 
 		else:
@@ -36,7 +49,8 @@ class Game(object):
 			self.record_game = True
 			self.game_record_file = open(options['game_record_filename'], 'a')
 		else:
-			self.record_game = False 
+			self.record_game = False
+		self.completed = False 
 
 
 	def run(self, silent=False):
@@ -49,6 +63,8 @@ class Game(object):
 			self.turn += 1
 			if self.record_game:
 				self.game_record_file.write("BEGIN TURN %d\n" % self.turn)
+			if self.full_record:
+				self.record_full_game_state()
 			current_player.take_turn()
 			if current_player.win:
 				break 
@@ -62,6 +78,7 @@ class Game(object):
 					print player.coins
 		if not silent:
 			print 'Player %d, order %d won in %d turns' % (current_player.id, current_player.order, self.turn) 
+		self.completed=True
 		if self.record_game:
 			self.game_record_file.write('Player %d, order %d won in %d turns\n' % (current_player.id, current_player.order, self.turn) )
 			self.game_record_file.write('FINAL STANDINGS:\n')
@@ -73,6 +90,10 @@ class Game(object):
 					self.game_record_file.write("%s COUNT: %d\n" % (building.upper(), player.buildings[building]))
 			self.game_record_file.write('--------------------------------\n')
 			self.game_record_file.close()
+		if self.full_record:
+
+			self.record_full_game_state()
+			self.full_record_file.close()
 		for player in self.players:
 			player.update_win_history()
 		if player.shared_ai:
@@ -184,3 +205,21 @@ class Game(object):
 		for player in self.players:
 			player.train_ai()
 
+	def get_full_record_headers(self):
+		"""
+		game#, turn#, buildings, coins, win for each player
+		2 + 4*(18+2) = 82
+		"""
+		header = ['game_id','turn_id']
+		for i in range(4):
+			header+= [('p%d_' % i) + x for x in (BUILDING_ORDER + ['coins','win'])]
+		return header 
+
+	def record_full_game_state(self):
+		#the completed boolean will 
+		vals = [self.id, self.turn + self.completed]
+		for player in self.players:
+			for building in BUILDING_ORDER:
+				vals.append(player.buildings[building])
+			vals += [player.coins, player.win]
+		self.full_record_writer.writerow(vals)
